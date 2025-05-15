@@ -296,16 +296,28 @@ uint8_t SoftI2C_Write(SoftI2C_HandleTypeDef* hi2c, uint8_t dev_addr,
 // 微秒级延时函数实现
 // 注意：不同STM32芯片的实现方式可能不同
 // 这里提供一个基于SysTick的通用实现
+void SoftI2C_DelayUs(uint32_t us) {
+    uint32_t cycles = us * (SystemCoreClock / 1000000) / 3; // 系数可校准
+    
+    __asm {
+        loop:
+            SUBS cycles, cycles, #1
+            NOP
+            BNE loop
+    }
+}
+
+/*
 void SoftI2C_DelayUs(uint32_t delay) {
-    uint32_t tickstart = HAL_GetTick();
-    uint32_t wait = delay;
-    
-    /* Add a freq to guarantee minimum wait */
-    if (wait < 0xFFFFFFFF) {
-        wait++;
-    }
-    
-    while ((HAL_GetTick() - tickstart) < wait) {
-    }
+ uint32_t cycles = us * (SystemCoreClock / 1000000);
+    __asm__ volatile (
+        "1: subs %0, #1\n\t"  // 1 cycle
+        "   bne 1b"           // 1 cycle (跳转时)
+        : "+r" (cycles)
+        :
+        : "cc"
+    );
 }    
+*/
+
 
